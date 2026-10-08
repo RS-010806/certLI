@@ -1,0 +1,61 @@
+{
+ "model": "colbertv2",
+ "dataset": "scifact",
+ "weights": "w1",
+ "k": 10,
+ "sigma": 0.875837939115171,
+ "sigma_raw": 1.000000073466621,
+ "n_docs": 5183,
+ "n_queries": 300,
+ "rows": [
+  {
+   "code": "LRS",
+   "params": {
+    "tau": 0.4379189695575855,
+    "eps": 0.394127072601827,
+    "shift": true,
+    "fixed_k": null,
+    "local_radii": true,
+    "rel": {
+     "tau": 0.5,
+     "eps": 0.45,
+     "shift": true
+    }
+   },
+   "bytes_ratio": 0.3667699166849519,
+   "bytes_per_doc": 22126.163225930926,
+   "full_bytes_per_doc": 60327.09396102643,
+   "mean_k": 31.885780436040903,
+   "mean_clusters": 85.92089523442021,
+   "mean_verbatim": 30.40285548909898,
+   "mean_tokens": 235.6527107852595,
+   "violations_lo": 0,
+   "violations_hi": 0,
+   "pairs": 1554900,
+   "reads_mean": 4914.3133333333335,
+   "reads_median": 5129.5,
+   "frac_read_mean": 0.9481600102900508,
+   "frac_read_median": 0.9896777927841018,
+   "frac_read_p90": 0.9998070615473664,
+   "frac_read_max": 1.0,
+   "frac_queries_read_le_5pct": 0.0,
+   "frac_queries_read_le_20pct": 0.0,
+   "width_mean": 14.054975312258078,
+   "slack_up_mean": 11.309804999048389,
+   "err_hat_mean": 0.8548757822719635,
+   "s_k_mean": 14.701555263342698,
+   "gap_k_mean": 0.12310452779134115,
+   "approx_recall_at_k": 0.8106666666666666,
+   "approx_ndcg10": 0.6958379828251849,
+   "kind": "lrs",
+   "rel": {
+    "tau": 0.5,
+    "eps": 0.45,
+    "shift": true
+   },
+   "build_s": 306.0056104660034,
+   "bound_s": 120.90718483924866,
+   "sweep": true
+  }
+ ]
+}

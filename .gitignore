@@ -1,0 +1,11 @@
+# large or regenerable data
+assets/
+emb/
+results/bounds/
+logs/
+# python / latex by-products
+__pycache__/
+*.pyc
+report/*.aux
+report/*.log
+report/*.out

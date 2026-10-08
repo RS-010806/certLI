@@ -1,0 +1,10 @@
+# tested versions in brackets (Python 3.13, CPU)
+torch>=2.3          # 2.14.1
+numpy>=1.26         # 2.5.3
+scipy>=1.11         # 1.18.1
+scikit-learn>=1.4   # 1.9.1
+pylate>=1.1         # 1.6.0
+transformers>=4.44  # 4.57.3
+sentence-transformers>=3.0  # 5.3.0
+matplotlib>=3.8     # 3.11.2
+huggingface_hub>=0.23

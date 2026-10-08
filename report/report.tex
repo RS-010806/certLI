@@ -1,0 +1,46 @@
+\documentclass[10pt]{article}
+\usepackage[a4paper,top=1.5cm,bottom=1.5cm,left=1.8cm,right=1.8cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{mathptmx}
+\usepackage[scaled=0.92]{helvet}
+\usepackage{amsmath,amssymb}
+\usepackage{microtype}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{caption}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{float}
+\usepackage[hidelinks]{hyperref}
+
+\definecolor{ink}{HTML}{1B2A47}
+\definecolor{boxbg}{HTML}{F4F7FB}
+\definecolor{boxrule}{HTML}{2F5D8C}
+\captionsetup{font=small,labelfont=bf,skip=3pt}
+\setlist{itemsep=2pt,topsep=2pt,parsep=0pt,leftmargin=1.25em}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{4pt}
+\setlength{\tabcolsep}{4.2pt}
+\renewcommand{\arraystretch}{1.08}
+\titleformat*{\section}{\large\bfseries\color{ink}}
+\titleformat*{\subsection}{\normalsize\bfseries\color{ink}}
+\titlespacing*{\section}{0pt}{8pt}{2pt}
+\titlespacing*{\subsection}{0pt}{6pt}{1pt}
+\newcommand{\nrm}[1]{\lVert #1\rVert}
+\renewcommand{\cite}[1]{[#1]}
+\makeatletter\newcommand{\tabin}[1]{\@@input #1 }\makeatother
+\newcommand{\hd}[1]{\begin{tabular}[b]{@{}c@{}}#1\end{tabular}}
+
+\begin{document}
+
+\begin{center}
+{\LARGE\bfseries\color{ink} CertLI: First Experiments}\\[3pt]
+{\large Can a compressed late-interaction index prove it returns the exact MaxSim top-10?}\\[6pt]
+{\small Rishi Shah \enspace$\cdot$\enspace Delhi Technological University and IIT Madras \enspace$\cdot$\enspace \href{mailto:rishishah010806@gmail.com}{rishishah010806@gmail.com} \enspace$\cdot$\enspace 8 October 2026}\\[2pt]
+{\small Code, every result file and exact commands: \href{https://github.com/RS-010806/certLI}{\texttt{github.com/RS-010806/certLI}}}
+\end{center}
+
+\input{body}
+
+\end{document}

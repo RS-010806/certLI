@@ -1,0 +1,23 @@
+{
+ "model": "colbertv2",
+ "dataset": "scifact",
+ "k": 16,
+ "tau_rel": 0.55,
+ "eps_rel": 0.5,
+ "dim": 128,
+ "perp_dim": 112,
+ "abs_cos_perp_median": 0.07009511847581161,
+ "abs_cos_perp_p99": 0.27231048055675533,
+ "abs_cos_sub_median": 0.1777168894371251,
+ "abs_cos_sub_p99": 0.6131732612566064,
+ "rms_cos_perp": 0.10494766424336582,
+ "rms_cos_sub": 0.2530773739174022,
+ "iso_prediction_perp": 0.0944911182523068,
+ "iso_prediction_sub": 0.25,
+ "dev_over_pointbound_median": 0.07210885812751629,
+ "dev_over_pointbound_p99": 0.28460860633174323,
+ "dev_over_clusterbound_median": 0.05238043984987556,
+ "dev_over_clusterbound_p99": 0.22756792157419006,
+ "dev_over_clusterbound_p999": 0.31300586544482994,
+ "n_pairs": 5447435
+}

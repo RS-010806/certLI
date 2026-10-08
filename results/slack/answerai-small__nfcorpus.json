@@ -1,0 +1,23 @@
+{
+ "model": "answerai-small",
+ "dataset": "nfcorpus",
+ "k": 16,
+ "tau_rel": 0.55,
+ "eps_rel": 0.5,
+ "dim": 96,
+ "perp_dim": 80,
+ "abs_cos_perp_median": 0.08915208626321677,
+ "abs_cos_perp_p99": 0.39512136731758035,
+ "abs_cos_sub_median": 0.15361658938507056,
+ "abs_cos_sub_p99": 0.5512861623638002,
+ "rms_cos_perp": 0.13655651948530612,
+ "rms_cos_sub": 0.22275203866317458,
+ "iso_prediction_perp": 0.11180339887498948,
+ "iso_prediction_sub": 0.25,
+ "dev_over_pointbound_median": 0.07826974129773967,
+ "dev_over_pointbound_p99": 0.34204903345490184,
+ "dev_over_clusterbound_median": 0.0495048200802667,
+ "dev_over_clusterbound_p99": 0.26150085078083346,
+ "dev_over_clusterbound_p999": 0.5039353521999873,
+ "n_pairs": 6174591
+}

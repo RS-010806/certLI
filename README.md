@@ -4,8 +4,6 @@
 
 This repository holds the complete implementation and every result behind the report **[`report/report.pdf`](report/report.pdf)** (*CertLI: First Experiments*, 4 pages). Every number in the report is read from a JSON file in [`results/`](results) by a single script ([`exp/make_report_assets.py`](exp/make_report_assets.py)), so each claim can be traced to a file and to the script that wrote it.
 
-Author: Rishi Shah (rishishah010806@gmail.com)
-
 ---
 
 ## Headline result

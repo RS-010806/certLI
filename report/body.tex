@@ -1,15 +1,15 @@
 \noindent\fcolorbox{boxrule}{boxbg}{\begin{minipage}{\dimexpr\textwidth-2\fboxsep-2\fboxrule\relax}
 \small
-\textbf{What I ran.} CertLI end to end on two ColBERT models (ColBERTv2, AnswerAI-ColBERT-small) and two BEIR corpora (SciFact, NFCorpus): corpus-mean shift (Lemma 1), low-rank-plus-sparse token codes, interval MaxSim bounds (Lemma 2), bound-ordered exact refinement, and a risk-controlled variant calibrated with Learn-then-Test \cite{3}. Ground truth is exact MaxSim against every document, so no number below depends on a candidate generator.
+\textbf{What I ran.} I implemented CertLI end to end and tested it on two ColBERT models (ColBERTv2 and AnswerAI-ColBERT-small) and two BEIR corpora (SciFact and NFCorpus). The pipeline has five parts: the corpus-mean shift (Lemma 1), low-rank-plus-sparse compression, interval bounds on MaxSim (Lemma 2), exact rescoring in the order of the bounds, and a calibrated variant using Learn-then-Test \cite{3}. All results are measured against exact MaxSim over the whole corpus, so nothing depends on a candidate generator.
 
 \vspace{3pt}
 \textbf{Findings.}
 \begin{enumerate}[leftmargin=1.4em,itemsep=3pt]
-\item \textbf{The math holds on real models.} The mean shift left every ranking unchanged (max score deviation $4.4\times10^{-6}$, identical top-100 for all queries), and the interval bounds were never violated in 50.3M (query, document) checks.
-\item \textbf{Deterministic certificates do not pay off at useful compression.} With codes at about one third of the fp16 index, proving the exact top-10 still requires scoring 79\% to 95\% of the corpus at full precision for ColBERTv2 and 100\% for AnswerAI-small (Fig.~\ref{fig:reads}, grey).
-\item \textbf{The reason is measurable.} The coding error points in a near-random direction relative to the query, so the realised error is a median 5\% of its worst-case bound. Meanwhile the median gap between the 10th and 11th exact scores is 0.08 (ColBERTv2) and below 0.01 (AnswerAI), against a mean interval slack of 5 to 11. No worst-case bound separates scores that close.
-\item \textbf{Calibrated certificates work.} Shrinking the same intervals by a factor chosen with Learn-then-Test (wrong top-10 on at most 5\% of queries, with 90\% confidence) scores 1.4\% of the corpus on ColBERTv2/SciFact, with 0.7\% of held-out queries wrong. Caveat: a fixed rerank depth calibrated the same way is equally cheap, so the gain comes from calibration, not yet from per-query adaptivity. A perfect stopping rule would read 3 to 7 times less: that is the headroom.
-\item \textbf{A geometric finding relevant to EigenLI \cite{2}.} AnswerAI-small tokens share one dominant direction (random tokens from different documents have cosine 0.82 to 0.84). Removing it is exactly rank-safe for MaxSim, but not for spectral scores: removing it from documents only collapses an EigenLI-style score from 68.0 to 1.6 nDCG@10; removing it from both sides is neutral to helpful (+2.2 at $k=32$).
+\item \textbf{The math holds on real models.} Subtracting the corpus mean left every ranking unchanged, and the bounds were never violated in 50.3M (query, document) checks.
+\item \textbf{Deterministic certificates are too costly at useful compression.} With the index compressed to about one third of its size, proving the exact top-10 still requires scoring 79\% to 95\% of the corpus for ColBERTv2 and all of it for AnswerAI-small (Figure~\ref{fig:reads}, grey).
+\item \textbf{The reason is clear in the data.} The coding error points in a nearly random direction relative to the query, so it is typically 5\% of its worst-case bound, while the 10th and 11th exact scores are separated by only 0.08 (ColBERTv2) or less than 0.01 (AnswerAI).
+\item \textbf{Calibrated certificates work.} Shrinking the same intervals by a factor chosen with Learn-then-Test (at most 5\% of queries with a wrong top-10, with 90\% confidence) cuts the cost to 1.4\% of the corpus on ColBERTv2/SciFact, with 0.7\% of held-out queries wrong (Figure~\ref{fig:reads}, blue). A fixed rerank depth calibrated the same way is equally cheap, so the gain comes from calibration rather than from adapting to each query; a perfect stopping rule would need 3 to 7 times fewer documents, which is the room left for improvement.
+\item \textbf{A finding relevant to EigenLI \cite{2}.} AnswerAI-small tokens share one dominant direction. Removing it is exactly safe for MaxSim but not for spectral scores: removing it from documents only drops an EigenLI-style score from 68.0 to 1.6 nDCG@10.
 \end{enumerate}
 \end{minipage}}
 
@@ -17,51 +17,58 @@
 \begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{../figs/f1_reads.pdf}
-\caption{Share of the corpus that must be scored at full precision to return the top-10, with codes at about one third of the fp16 index size. Grey: deterministic certificate (exact top-10 guaranteed). Blue: the same intervals shrunk by a factor chosen with Learn-then-Test so that $\Pr[\text{top-10}\ne\text{exact}]\le5\%$ with confidence 90\%. Orange: a fixed rerank depth calibrated the same way. In brackets: realised share of held-out queries whose top-10 differs from exact MaxSim (mean over 200 random calibration/test splits).}
+\caption{Share of the corpus scored at full precision to return the top-10, with the index compressed to about one third of its size. Grey: deterministic certificate (top-10 guaranteed exact). Blue: the same intervals shrunk by a factor chosen with Learn-then-Test, so that at most 5\% of queries get a wrong top-10 (90\% confidence). Orange: a fixed rerank depth calibrated the same way. In brackets: share of held-out queries whose top-10 differs from exact MaxSim, averaged over 200 random calibration/test splits.}
 \label{fig:reads}
 \end{figure}
 
 %=====================================================================
 \section{Setup}
-\textbf{Models.} ColBERTv2 \cite{6} (128-d tokens) and AnswerAI-ColBERT-small-v1 (96-d), encoded with PyLate using each model's prefixes, \texttt{[MASK]} query expansion to 32 tokens and the punctuation skiplist; documents cut at 300 tokens. \textbf{Data.} BEIR SciFact (5,183 documents, 300 test queries) and NFCorpus (3,633 documents, 323 test queries). \textbf{Scoring.} Exact MaxSim $C(Q,D)=\sum_i\max_j\langle q_i,d_j\rangle$ over the whole corpus; nDCG@10 as in BEIR. \textbf{Codes.} Each document is shifted by the corpus mean $\mu$ and coded in its own eigenbasis ($k\le32$, chosen per document to minimise bytes); tokens with residual above $\tau$ are kept verbatim and the rest are pooled into clusters of radius $\le\varepsilon$, each with its own radii. $\tau,\varepsilon$ are in units of the RMS shifted-token norm. With the same bounds I also certify POOL (clusters in the full space, no subspace) and PLAID-style residual codes \cite{8} (centroid plus $b$-bit residual per dimension, with a 1-byte error radius per token). \textbf{Cost.} Given bounds $[L_D,U_D]$ and the exact 10th score $s_{(10)}$, any correct method must score every $D$ with $U_D\ge s_{(10)}$, and bound-ordered refinement scores exactly those \cite{4}. I report that count as a share of the corpus. \textbf{Hardware.} 2 CPU cores, 7\,GB RAM, no GPU.
+\textbf{Models and data.} ColBERTv2 \cite{6} (128-dimensional tokens) and AnswerAI-ColBERT-small-v1 (96 dimensions), encoded with PyLate using each model's standard settings (queries expanded to 32 tokens, documents cut at 300 tokens). Corpora: BEIR SciFact (5,183 documents, 300 test queries) and NFCorpus (3,633 documents, 323 test queries). Ranking quality is nDCG@10 against exact MaxSim, $C(Q,D)=\sum_i\max_j\langle q_i,d_j\rangle$, computed over the whole corpus.
+
+\textbf{Compression.} After subtracting the corpus mean $\mu$, each document is stored in its own eigenbasis of at most 32 directions. Tokens that this basis represents poorly (residual above $\tau$) are kept exactly; the rest are grouped into small clusters (radius at most $\varepsilon$), each stored with its own error radii. Both $\tau$ and $\varepsilon$ are relative to the typical token norm, and sizes are reported as a share of the uncompressed fp16 index. For comparison, I certify two simpler codes with the same bounds: POOL, which clusters tokens without a subspace, and a PLAID-style residual code \cite{8}.
+
+\textbf{Cost.} Every document gets an interval $[L_D,U_D]$ that is guaranteed to contain its exact score. Documents are rescored exactly in decreasing order of $U_D$ until the next upper bound falls below the current 10th best score, which reads the fewest documents any correct method can read with these intervals \cite{4}. I report this number as a share of the corpus. All runs used 2 CPU cores and no GPU.
 
 %=====================================================================
-\section{Sanity checks}
+\section{Checking the pipeline}
+Before measuring certificates, I checked that the encoders, the evaluation and Lemma 1 behave as expected (Table~\ref{tab:sanity}).
 \begin{table}[H]
 \centering\small
-\caption{Exact MaxSim reproduces published nDCG@10 (in brackets). IDF: token-importance weights as in \cite{1}, change in brackets. Lemma 1: shifting all document tokens by the corpus mean moves every score of a query by the same constant. Per-document centring, the obvious alternative, is not rank-safe.}
+\caption{Pipeline checks: nDCG@10 of exact MaxSim (published value in brackets) and with IDF token weights \cite{1} (change in brackets); Lemma 1, as the largest deviation of the shifted scores from the predicted constant offset and the share of queries with an identical top-100; nDCG@10 after subtracting each document's own mean instead of the corpus mean.}
 \label{tab:sanity}
 \begin{tabular}{llccccc}
 \toprule
-Model & Data & \hd{nDCG@10\\(published)} & \hd{IDF-weighted\\nDCG@10} & \hd{Lemma 1: max\\score deviation} & \hd{Same\\top-100} & \hd{Per-doc centring\\nDCG@10} \\
+Model & Data & \hd{nDCG@10\\(published)} & \hd{IDF-weighted\\nDCG@10} & \hd{Lemma 1:\\max deviation} & \hd{Same\\top-100} & \hd{Per-document\\mean removed} \\
 \midrule
 \tabin{../tables/k1.tex}
 \bottomrule
 \end{tabular}
 \end{table}
-Exact MaxSim matches the published numbers within 0.6 points, so encoders and evaluation are right. IDF weights help ColBERTv2 on SciFact ($+1.7$) and hurt AnswerAI-small ($-1.6$): useful token importance is model specific. Lemma 1 holds to float32 rounding. Centring each document by its own mean collapses AnswerAI-small (74.5 to 37.7), a first sign of its anisotropy.
+Exact MaxSim reproduces the published numbers within 0.6 points, and Lemma 1 holds up to float32 rounding: subtracting the corpus mean shifts all scores of a query by the same constant and leaves the top-100 unchanged for every query. Subtracting each document's own mean is not safe and collapses AnswerAI-small (74.5 to 37.7), a first sign that this model's tokens share a strong common direction. IDF token weights help ColBERTv2 on SciFact ($+1.7$) but hurt AnswerAI-small ($-1.6$), so useful token importance is model specific.
 
 %=====================================================================
 \section{Results}
 \subsection{The low-rank-plus-sparse structure is real}
+CertLI assumes that the tokens of a document lie close to a low-dimensional subspace, apart from a few tokens that do not fit. Table~\ref{tab:geom} tests this assumption.
 \begin{table}[H]
 \centering\small
-\caption{Geometry of document token sets. Mean cosine between random tokens from different documents. Energy held by the top-16 eigenvectors of each document, and effective rank, before / after the shift. $|\cos(v_1,\mu)|$: alignment of each document's leading eigenvector with the corpus mean. Last two columns: how the residual after a rank-16 projection depends on token IDF.}
+\caption{Geometry of document token sets. Token cosine: mean cosine between random tokens from different documents. Top-16 energy and effective rank of each document, before / after subtracting the corpus mean $\mu$. $|\cos(v_1,\mu)|$: alignment of each document's leading eigenvector with $\mu$. Last two columns: how the residual left after a 16-dimensional projection depends on token IDF.}
 \label{tab:geom}
 \begin{tabular}{llccccccc}
 \toprule
-Model & Data & $\nrm{\mu}$ & \hd{Token\\cosine} & \hd{Top-16\\energy \%} & \hd{Effective\\rank} & $|\cos(v_1,\mu)|$ & \hd{Spearman\\(IDF, residual)} & \hd{Residual, top /\\bottom IDF decile} \\
+Model & Data & $\nrm{\mu}$ & \hd{Token\\cosine} & \hd{Top-16\\energy \%} & \hd{Effective\\rank} & $|\cos(v_1,\mu)|$ & \hd{Spearman\\(IDF, residual)} & \hd{Residual, rarest /\\most common tokens} \\
 \midrule
 \tabin{../tables/k2.tex}
 \bottomrule
 \end{tabular}
 \end{table}
-After the shift, 16 directions hold 74\% to 76\% of each document's energy. What is left concentrates on rare tokens: the residual grows with IDF (Spearman 0.45 to 0.55) and is 2.0 to 2.5 times larger in the top IDF decile than in the bottom one. This is the structure CertLI assumes, and the reason rare tokens are kept verbatim. AnswerAI-small is strongly anisotropic: its corpus mean has norm 0.90 to 0.92 for unit-norm tokens, each document's leading eigenvector is that mean ($|\cos|=0.99$), and the effective rank of a document rises from about 2.5 to about 29 once it is removed.
+After the mean shift, 16 directions capture 74\% to 76\% of each document's energy, and what remains is concentrated on rare tokens: the residual grows with IDF (Spearman 0.45 to 0.55) and is 2.0 to 2.5 times larger for the rarest tenth of tokens than for the most common tenth. This is why CertLI keeps rare tokens exactly. The table also shows that AnswerAI-small is strongly anisotropic: two random tokens from different documents have cosine 0.82 to 0.84, the corpus mean has norm 0.90 to 0.92 for unit-norm tokens, and each document's leading eigenvector points along it.
 
-\subsection{Deterministic certificates read almost everything}
+\subsection{Deterministic certificates score almost everything}
+With the structure confirmed, Table~\ref{tab:cert} measures what a deterministic certificate costs at different compression levels.
 \begin{table}[H]
 \centering\small
-\caption{Share of the corpus scored at full precision to certify the exact top-10, in \% (code size as \% of fp16 in brackets). Last column: bound violations over all configurations run.}
+\caption{Share of the corpus scored to certify the exact top-10, in \% (index size as \% of fp16 in brackets), for the low-rank-plus-sparse code at four settings and for POOL. Last column: bound violations over all configurations run.}
 \label{tab:cert}
 \begin{tabular}{llcccccc}
 \toprule
@@ -73,48 +80,51 @@ Model & Data & $(0.3,0.25)$ & $(0.5,0.25)$ & $(0.5,0.45)$ & \hd{$(0.5,0.45)$,\\g
 \bottomrule
 \end{tabular}
 \end{table}
-No bound was violated, so bound-ordered refinement returns the exact top-10 by construction. The cost is the problem: the largest code (72\% of fp16) still scores 39\% of SciFact for ColBERTv2; at about one third of fp16 it scores 79\% to 95\%; for AnswerAI-small, everything. Two design choices do matter: per-cluster radii (global radii push 95\% to 100\%), and the subspace, since POOL needs 59\% of fp16 for the same cost that the low-rank code reaches at 40\% to 42\%. A 1-bit PLAID-style code (8\% of fp16, AnswerAI/NFCorpus) also scores 100\%.
+No bound was violated in any configuration, so the returned top-10 is always exact. The cost, however, is high. Even the largest code (72\% of the index size) has to score 39\% of SciFact for ColBERTv2; at about one third of the size, 79\% to 95\%; for AnswerAI-small, the whole corpus. The design choices still matter: per-cluster radii are needed (with one global radius the cost rises from 95\% to 100\%), and the subspace saves memory, since POOL needs 59\% of the index size to reach the cost that the low-rank code reaches at 40\% to 42\%. A 1-bit PLAID-style code (8\% of the size, AnswerAI/NFCorpus) also has to score every document.
 
-\subsection{Why: the bound pays for a worst case that almost never happens}
+\subsection{Why: the bounds pay for a worst case that rarely happens}
+Figure~\ref{fig:pos} and Table~\ref{tab:why} show where this cost comes from, first at the level of single tokens and then at the level of whole documents.
 \begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{../figs/f2_position.pdf}
-\caption{Where the exact score falls inside its certified interval, over all (query, document) pairs (codes at about one third of fp16 size). The deterministic certificate must cover position 1; the cut-off chosen by Learn-then-Test sits just past where the mass ends.}
+\caption{Where the exact score falls inside its interval, over all (query, document) pairs, with the index at about one third of its size. A deterministic certificate must allow for position 1; the factor chosen by Learn-then-Test sits just past where the exact scores actually end.}
 \label{fig:pos}
 \end{figure}
 \begin{table}[H]
 \centering\small
-\caption{Token level: RMS cosine between a query token's off-subspace component and the coding residual (isotropic prediction $1/\sqrt{\dim-k}$ in brackets), and the realised deviation as a share of its bound (median / 99th percentile). Document level: median gap between the 10th and 11th exact scores, mean upper slack $U-S$, and 99th percentile / maximum position of the exact score inside its interval.}
+\caption{Why certificates are loose. Tokens: RMS cosine between the query and the coding error (value for a random direction in brackets), and the actual error as a share of its bound (median / 99th percentile). Documents: median gap between the 10th and 11th exact scores, mean distance from the exact score to its upper bound, and how far the exact score sits inside its interval (99th percentile / maximum).}
 \label{tab:why}
 \begin{tabular}{llccccc}
 \toprule
-Model & Data & \hd{RMS cosine\\(isotropic)} & \hd{Deviation\\/ bound} & \hd{Top-10\\gap} & \hd{Mean\\slack} & \hd{Position\\p99 / max} \\
+Model & Data & \hd{RMS cosine\\(random)} & \hd{Error\\/ bound} & \hd{Top-10\\gap} & \hd{Mean distance\\to upper bound} & \hd{Position\\p99 / max} \\
 \midrule
 \tabin{../tables/k4.tex}
 \bottomrule
 \end{tabular}
 \end{table}
-Two facts explain Table~\ref{tab:cert}. First, Lemma 2 charges each query token as if the coding error were aligned with it, but the error direction is close to random: its RMS cosine with the query is only 1.07 to 1.22 times the isotropic value. The realised deviation is therefore a median 5\% of its bound, and the exact score sits a median 5\% to 14\% of the way from the code's estimate to the upper bound, never beyond 62\% (Fig.~\ref{fig:pos}). Second, the top-10 is decided by tiny margins: the median gap between the 10th and 11th scores is 0.08 to 0.10 for ColBERTv2 and 0.003 to 0.009 for AnswerAI-small, against a mean slack of 5 to 11. To certify, the upper bounds of thousands of documents must fall below such a gap. Worst-case radii cannot do that; calibration exploits exactly the distance between worst and typical case.
+Lemma 2 assumes the worst case, in which the coding error points exactly along the query. In practice the error direction is close to random: its RMS cosine with the query is only 1.07 to 1.22 times the value for a random direction, so the actual error is a median 5\% of its bound. Figure~\ref{fig:pos} shows the consequence for whole documents: the exact score sits a median 5\% to 14\% of the way from the code's estimate to the upper bound, and never beyond 62\%. At the same time, the top-10 is decided by very small margins. The median gap between the 10th and 11th exact scores is 0.08 to 0.10 for ColBERTv2 and 0.003 to 0.009 for AnswerAI-small, while the upper bounds sit 5 to 11 above the exact scores on average. A worst-case bound cannot separate scores this close, but a bound sized for the typical case could.
 
-\subsection{Calibrated certificates: same intervals, a statistical guarantee}
+\subsection{Calibrated certificates}
+This suggests shrinking each interval towards the code's estimate and choosing the shrink factor $\lambda$ from data. Table~\ref{tab:ltt} does this with Learn-then-Test, which guarantees that at most 5\% of queries get a wrong top-10, with 90\% confidence, and compares the result with two baselines.
 \begin{table}[H]
 \centering\small
-\caption{Learn-then-Test, $\alpha=0.05$, $\delta=0.1$, 200 random 50/50 calibration/test splits, loss $=\mathbf 1\{\text{top-10}\ne\text{exact}\}$. Share of the corpus scored, in \%; realised share of held-out queries with a wrong top-10 in brackets. Oracle: mean depth of a perfect per-query stopping rule.}
+\caption{Calibrated certificates (Learn-then-Test, $\alpha=0.05$, $\delta=0.1$, 200 random 50/50 calibration/test splits). Share of the corpus scored, in \%, with the share of held-out queries that get a wrong top-10 in brackets. $\hat\lambda$: selected shrink factor ($\lambda=1$ is the deterministic certificate). Oracle: a perfect per-query stopping rule.}
 \label{tab:ltt}
 \begin{tabular}{lllccccc}
 \toprule
-Model & Data & \hd{Code\\(size)} & Deterministic & \hd{Calibrated\\CertLI} & $\hat\lambda$ & \hd{Calibrated\\fixed depth} & Oracle \\
+Model & Data & \hd{Index\\size} & Deterministic & \hd{Calibrated\\CertLI} & $\hat\lambda$ & \hd{Calibrated\\fixed depth} & Oracle \\
 \midrule
 \tabin{../tables/k5.tex}
 \bottomrule
 \end{tabular}
 \end{table}
-Calibration turns the slack into savings. The selected shrink factor $\hat\lambda$ is 0.15 to 0.40, consistent with Fig.~\ref{fig:pos}. On ColBERTv2/SciFact, CertLI scores 70 of 5,183 documents per query on average and returns a wrong top-10 on 0.7\% of held-out queries against the 5\% target (54 documents at $\alpha=0.10$). The realised error stays between 0.3\% and 2.5\% in all four settings. Two honest observations. (i) A fixed depth in the code's score order, calibrated the same way, is equally cheap or cheaper, at a higher realised error: today the gain comes from calibration, not from adaptivity. (ii) Adaptivity has real headroom: a perfect per-query rule scores 0.4\% to 14.4\%, 3 to 7 times less than the best fixed depth, and the oracle depth correlates with how crowded the scores near the 10th are (Spearman 0.36 to 0.69), which suggests a learnable stopping rule. AnswerAI/NFCorpus stays expensive (71\%) because its score gaps are the smallest (0.003).
+The selected $\hat\lambda$ is 0.15 to 0.40, in line with where the exact scores actually fall. On ColBERTv2/SciFact, CertLI now scores 70 of 5,183 documents per query on average (1.4\%), and only 0.7\% of held-out queries get a wrong top-10. Across all four settings the observed error stays between 0.3\% and 2.5\%. Two points need to be stated clearly. First, a fixed rerank depth calibrated in the same way is just as cheap or cheaper, with a higher error, so for now the gain comes from calibration rather than from adapting to each query. Second, there is real room for adaptivity: a perfect per-query stopping rule would score only 0.4\% to 14.4\% of the corpus, 3 to 7 times less than the best fixed depth, and its depth correlates with how crowded the scores near the 10th are (Spearman 0.36 to 0.69), which suggests it can be learned. AnswerAI/NFCorpus remains expensive (71\%) because its score gaps are the smallest.
 
 \subsection{Side result: the shared direction and EigenLI}
+The shared direction in AnswerAI-small also matters for spectral methods such as EigenLI \cite{2}. Table~\ref{tab:eigen} compares, at equal storage, my re-implementation of EigenLI's projection score with and without removing the corpus mean, together with Ward token pooling.
 \begin{table}[H]
 \centering\small
-\caption{SciFact, $k$ vectors per document (equal storage across columns): nDCG@10, with overlap with the exact top-10 in \% in brackets. Exact MaxSim next to the model name. EigenLI here is my re-implementation of the projection score $\sum_i\nrm{\Pi_D q_i}^2$, with $\Pi_D$ the top-$k$ eigenspace of the document's token second-moment matrix \cite{2}. Ward: hierarchical token pooling \cite{7}.}
+\caption{SciFact, $k$ vectors per document (equal storage in every column): nDCG@10, with overlap with the exact top-10 in \% in brackets; exact MaxSim next to the model name. EigenLI is my re-implementation of the projection score $\sum_i\nrm{\Pi_D q_i}^2$, with $\Pi_D$ the top-$k$ eigenspace of the document's tokens \cite{2}. Ward: hierarchical token pooling \cite{7}.}
 \label{tab:eigen}
 \begin{tabular}{lccccc}
 \toprule
@@ -124,17 +134,17 @@ Model (exact) & $k$ & EigenLI & \hd{Mean removed,\\documents only} & \hd{Mean re
 \bottomrule
 \end{tabular}
 \end{table}
-Removing the corpus mean from documents only destroys AnswerAI-small (68.0 to 1.6 at $k=16$): queries keep their large shared component, which now falls outside every document's subspace and turns into noise. Removing it from both sides is neutral at $k=16$ and helps at $k=32$ (67.4 to 69.6), while for the less anisotropic ColBERTv2 it costs 1.1 to 3.3 points. So one-sided centring is free for MaxSim (Lemma 1) but not for quadratic scores, and the right treatment of the shared direction is model dependent. At equal storage EigenLI beats Ward pooling by 4.4 to 8.0 points in every cell.
+Removing the mean from documents only destroys the ranking for AnswerAI-small (68.0 to 1.6 at $k=16$): queries keep their large shared component, which then falls outside every document's subspace and turns into noise. Removing it from both documents and queries is neutral at $k=16$ and helps at $k=32$ (67.4 to 69.6), while for the less anisotropic ColBERTv2 it costs 1.1 to 3.3 points. So subtracting the mean on one side is free for MaxSim (Lemma 1) but not for quadratic scores, and the right treatment of the shared direction depends on the model. In every setting, EigenLI beats Ward pooling by 4.4 to 8.0 points.
 
 %=====================================================================
 \section{Takeaways and next steps}
-\textbf{What worked.} Both lemmas are correct and cheap to apply; the low-rank-plus-sparse structure is real and saves about 30\% of bytes over plain clustering at equal certification cost; calibrated certificates give a statistical guarantee while scoring 1.4\% to 12.6\% of the corpus in three of four settings.
+\textbf{What worked.} Both lemmas hold and are cheap to apply. The low-rank-plus-sparse structure is real and saves about 30\% of memory over plain clustering at the same certification cost. Calibrated certificates control the error while scoring 1.4\% to 12.6\% of the corpus in three of the four settings.
 
-\textbf{What did not.} Deterministic certificates need most of the corpus at useful compression, because worst-case radii ignore that coding error is nearly isotropic and that top-10 margins are tiny. Per-query adaptive stopping does not yet beat a calibrated fixed depth.
+\textbf{What did not.} Deterministic certificates still score most of the corpus at useful compression, because worst-case bounds ignore that the coding error is nearly random in direction and that top-10 margins are tiny. Adapting the stopping point to each query does not yet beat a calibrated fixed depth.
 
-\textbf{Next.} (1) \emph{Randomised radii}: apply a random rotation or subtractive dither \cite{5} before coding, so that the near-isotropy measured here becomes a property the index guarantees; the bound can then use concentration instead of Cauchy-Schwarz, giving a high-probability certificate without calibration data. (2) \emph{Learned stopping} from margin and density features, aimed at the 3 to 7 times headroom in Table~\ref{tab:ltt}. (3) \emph{Scale}: MS MARCO and LoTTE with PLAID candidate generation on GPU, certifying PLAID's own residual codes.
+\textbf{Next steps.} (1) Apply a random rotation or dither \cite{5} before compression, so that the near-isotropy observed here becomes a guarantee; the bound can then rely on concentration instead of the worst case and give a high-probability certificate without calibration data. (2) Learn the stopping rule from score margins and density, aiming at the 3 to 7 times headroom shown by the oracle. (3) Scale to MS MARCO and LoTTE with PLAID candidate generation on GPU, certifying PLAID's own compressed codes.
 
-\textbf{Scope.} Small corpora (3.6k and 5.2k documents), CPU only, exhaustive exact scoring as ground truth, 150 to 162 calibration queries per split. EigenLI is my re-implementation, not the authors' code.
+\textbf{Scope.} Small corpora (3.6k and 5.2k documents), CPU only, exact scoring of the full corpus as ground truth, and 150 to 162 calibration queries per split. EigenLI is my re-implementation, not the authors' code.
 
 \section*{References}
 {\small

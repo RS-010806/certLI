@@ -133,7 +133,7 @@ for m, d in PAIRS:
         sh, dp = s["shrink"]["ltt05"], s["depth"]["ltt05"]
         lam = s["shrink"]["grid"][int(sh["param_index_median"])]
         code = "LRS" if kind == "lrs" else "RQ 2-bit"
-        rows.append(f"{MS[m]} & {DS[d]} & {code} ({100*cr['bytes_ratio']:.0f}\\%) & {100*cr['frac_read_mean']:.1f} & "
+        rows.append(f"{MS[m]} & {DS[d]} & {100*cr['bytes_ratio']:.0f}\\% & {100*cr['frac_read_mean']:.1f} & "
                     f"{100*sh['reads']/N:.1f} ({100*sh['miss']:.1f}) & {lam:g} & {100*dp['reads']/N:.1f} ({100*dp['miss']:.1f}) & "
                     + (f"{100*o['oracle_mean']/N:.1f}" if o else "--") + " \\\\")
         OUT[f"ltt/{m}/{d}/{kind}"] = dict(N=N, bytes=cr["bytes_ratio"], exact=cr["frac_read_mean"], shrink=sh, depth=dp,
@@ -184,7 +184,7 @@ if fig1:
         ax.text(f["cal"] * 1.12, yy - h, f"{f['cal']:.1f}%   ({f['cal_miss']:.1f}% of queries wrong)", va="center",
                 fontsize=7.2, color=INK, fontweight="bold")
     ax.set_yticks(y)
-    ax.set_yticklabels([f"{f['label']}\ncode = {f['size']:.0f}% of fp16" for f in fig1], fontsize=7.6)
+    ax.set_yticklabels([f"{f['label']}\ncompressed to {f['size']:.0f}%" for f in fig1], fontsize=7.6)
     ax.set_xscale("log")
     ax.set_xlim(0.3, 1200)
     from matplotlib.ticker import NullLocator

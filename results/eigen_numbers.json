@@ -28,7 +28,8 @@
    "ndcg10": 0.6932164727751521,
    "param_index_median": 16.0
   },
-  "eigen32_memory": 0.13579304856442015
+  "eigen32_memory": 0.13579304856442015,
+  "rescore_ratio": 6.214285714285714
  },
  "colbertv2/nfcorpus": {
   "exact": 0.34360655827308767,
@@ -59,7 +60,8 @@
    "ndcg10": 0.34062777556571594,
    "param_index_median": 2.0
   },
-  "eigen32_memory": 0.13588944254890892
+  "eigen32_memory": 0.13588944254890892,
+  "rescore_ratio": 10.295774647887324
  },
  "answerai-small/scifact": {
   "exact": 0.7454435897045724,
@@ -90,7 +92,8 @@
    "ndcg10": 0.7389253854232458,
    "param_index_median": 11.0
   },
-  "eigen32_memory": 0.13579304856442015
+  "eigen32_memory": 0.13579304856442015,
+  "rescore_ratio": 1.9365079365079365
  },
  "answerai-small/nfcorpus": {
   "exact": 0.3697124529782683,
@@ -121,6 +124,7 @@
    "ndcg10": 0.36609040085259664,
    "param_index_median": 4.0
   },
-  "eigen32_memory": 0.13588944254890892
+  "eigen32_memory": 0.13588944254890892,
+  "rescore_ratio": 1.0999999999999999
  }
 }

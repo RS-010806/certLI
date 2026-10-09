@@ -44,50 +44,55 @@
 
 \noindent\fcolorbox{boxrule}{boxbg}{\begin{minipage}{\dimexpr\textwidth-2\fboxsep-2\fboxrule\relax}
 \small
-\textbf{Short answer.} At the same memory, yes for AnswerAI-small and no for ColBERTv2: removing the corpus mean raises EigenLI's nDCG@10 on AnswerAI-small by 2.2 (SciFact) and 3.8 (NFCorpus) points and costs about 1 point on ColBERTv2 (Table~\ref{tab:e1}). With exact rescoring, yes in all four settings: calibrated CertLI comes within 0.4 points of exact MaxSim and rescores fewer documents than EigenLI used as the first stage under the same guarantee, for example 1.4\% against 8.7\% on ColBERTv2/SciFact (Table~\ref{tab:e2}).
+\textbf{Short answer: yes, in two ways.}
+\begin{enumerate}[leftmargin=1.4em,itemsep=2pt]
+\item \textbf{Same memory.} Shifting by the corpus mean improves EigenLI on AnswerAI-small by 2.2 nDCG@10 points on SciFact and 3.8 on NFCorpus. On ColBERTv2 it does not help (Table~\ref{tab:e1}).
+\item \textbf{With exact rescoring.} Under the same guarantee, CertLI reaches exact MaxSim quality while rescoring up to 10 times fewer documents than an EigenLI first stage, at about 2.5 times EigenLI's memory (Table~\ref{tab:e2}).
+\end{enumerate}
 \end{minipage}}
 
 \section*{Setup}
-EigenLI as defined in its paper \cite{1}: each document keeps the top-$k$ eigenvectors of its token second-moment matrix $\sum_j d_jd_j^\top$, and $s(Q,D)=\sum_i\nrm{\Pi_D q_i}^2$ (my re-implementation). Models, corpora and protocol are those of the main report (ColBERTv2 and AnswerAI-ColBERT-small on BEIR SciFact and NFCorpus). At $k=32$, EigenLI stores 13.6\% of the full fp16 index.
+EigenLI as defined in its paper \cite{1}: each document keeps the top-$k$ eigenvectors of its token second-moment matrix $\sum_j d_jd_j^\top$, and $s(Q,D)=\sum_i\nrm{\Pi_D q_i}^2$ (my re-implementation). Same models, corpora and protocol as the main report. At $k=32$, EigenLI stores 13.6\% of the full fp16 index.
 
 \section*{1. Same memory, no rescoring}
-Table~\ref{tab:e1} compares EigenLI with two changes that keep its memory at 32 vectors per document. The first removes one corpus-wide mean from documents and queries before building the subspace and scoring, which is CertLI's Lemma 1 shift and differs from per-text centring. The second spends 8 of the 32 vectors on the tokens farthest from a 24-dimensional subspace, which is CertLI's sparse part, scored as $\sum_i\max\big(\nrm{\Pi_D q_i}^2,\max_t\langle q_i,t\rangle_+^2\big)$.
+Both of our variants keep EigenLI's budget of 32 vectors per document. \emph{Mean-shifted EigenLI} subtracts one corpus-wide mean from documents and queries before building the subspace and scoring (CertLI's Lemma 1 shift, not per-text centring). \emph{Low-rank + sparse EigenLI} keeps 24 eigenvectors plus the 8 tokens farthest from that subspace, scored as $\sum_i\max\big(\nrm{\Pi_D q_i}^2,\max_t\langle q_i,t\rangle_+^2\big)$.
 \begin{table}[H]
 \centering\small
-\caption{nDCG@10 at equal memory; change against EigenLI at $k=32$ in brackets, gains above 0.5 in bold.}
+\caption{nDCG@10 at equal memory (32 vectors per document). Bold: best of the three methods; in brackets, change against EigenLI.}
 \label{tab:e1}
-\begin{tabular}{llccccc}
+\begin{tabular}{llcccc}
 \toprule
-Model & Data & \hd{Exact\\MaxSim} & \hd{EigenLI\\$k=16$} & \hd{EigenLI\\$k=32$} & \hd{$k=32$, corpus\\mean removed} & \hd{$k=24$ + 8\\farthest tokens} \\
+Model & Data & EigenLI & \hd{Mean-shifted\\EigenLI (ours)} & \hd{Low-rank + sparse\\EigenLI (ours)} & \hd{Exact\\MaxSim} \\
 \midrule
 \tabin{../tables/e1.tex}
 \bottomrule
 \end{tabular}
 \end{table}
-Removing the mean helps AnswerAI-small, whose tokens share one dominant direction, and closes 31\% (SciFact) and 42\% (NFCorpus) of its gap to MaxSim. On ColBERTv2, whose tokens are far less anisotropic, it costs about 1 point, so plain EigenLI remains the better choice there. Keeping the farthest tokens helps only on AnswerAI/SciFact.
+The mean shift helps AnswerAI-small, whose tokens share one dominant direction, and closes 31\% (SciFact) and 42\% (NFCorpus) of its gap to exact MaxSim. On ColBERTv2, neither variant helps meaningfully ($-1.1$ to $+0.1$).
 
 \section*{2. With exact rescoring}
-Table~\ref{tab:e2} adds exact MaxSim rescoring of a calibrated number of documents, chosen with Learn-then-Test \cite{2} so that at most 5\% of queries get a top-10 different from exact MaxSim (90\% confidence, 200 random calibration/test splits).
+Both pipelines rescore with exact MaxSim until Learn-then-Test \cite{2} certifies that at most 5\% of queries get a top-10 different from exact MaxSim (90\% confidence). Only the first stage differs: EigenLI (13.6\% of the index) or the CertLI index with its bounds (34\% to 37\%).
 \begin{table}[H]
 \centering\small
-\caption{nDCG@10 with exact rescoring; in brackets, memory as a share of the full index, or the share of documents rescored per query. On the few queries whose top-10 is not exact, calibrated methods can land slightly above or below exact MaxSim.}
+\caption{Calibrated exact rescoring under the same guarantee. Rescored: share of documents rescored per query. Bold: better of the pair.}
 \label{tab:e2}
 \begin{tabular}{llccccc}
 \toprule
-Model & Data & \hd{EigenLI\\$k=32$} & \hd{CertLI index,\\no rescoring} & \hd{Calibrated\\CertLI} & \hd{EigenLI $k=32$ +\\calibrated rescoring} & \hd{Exact\\MaxSim} \\
+& & \multicolumn{2}{c}{EigenLI first stage} & \multicolumn{2}{c}{CertLI (ours)} & \\
+\cmidrule(lr){3-4}\cmidrule(lr){5-6}
+Model & Data & nDCG@10 & Rescored & nDCG@10 & Rescored & \hd{Exact\\MaxSim} \\
 \midrule
 \tabin{../tables/e2.tex}
 \bottomrule
 \end{tabular}
 \end{table}
-Without any rescoring, the CertLI index already ranks above EigenLI in all four settings, at about 2.5 times its memory. With calibrated rescoring it comes within 0.4 points of exact MaxSim, rescoring 1.4\% to 12.6\% of documents in three settings and 71\% on AnswerAI/NFCorpus, whose top-10 score gaps are the smallest. As the first stage of the same procedure, EigenLI needs more rescoring in every setting.
+Both reach exact MaxSim quality within 0.4 points, but CertLI rescores 1.1 to 10.3 times fewer documents. Without rescoring, the CertLI index alone also beats EigenLI in all four settings (by 1.1 to 3.3 points), at about 2.5 times the memory.
 
-\textbf{Takeaway.} EigenLI is the stronger compact scorer, and the corpus-mean shift is a free gain for anisotropic models; CertLI is the stronger route to exact MaxSim quality.
+\textbf{Takeaway.} EigenLI is the stronger compact scorer, and the mean shift is a free gain for anisotropic models such as AnswerAI-small. CertLI is the cheaper route to exact MaxSim quality when more memory is available.
 
 \section*{References}
 {\small
 [1] Archish S, S.\ Basu, A.\ Garg, R.\ Krishnaswamy, K.\ Shiragur. EigenLI: spectral approximations to late interaction. arXiv:2609.07561, 2026.\quad
 [2] A.\ N.\ Angelopoulos, S.\ Bates, E.\ J.\ Cand\`es, M.\ I.\ Jordan, L.\ Lei. Learn then Test: calibrating predictive algorithms to achieve risk control. arXiv:2110.01052, 2021.}
-
 
 \end{document}

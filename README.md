@@ -29,25 +29,30 @@ Share of the corpus scored at full precision per query. In brackets: realised sh
 
 ## EigenLI comparison
 
-EigenLI as defined in its paper (Archish S et al., arXiv:2609.07561): each document keeps the top-`k` eigenvectors of its token second-moment matrix and is scored by `sum_i |Pi_D q_i|^2` (re-implemented in [`exp/run_approx.py`](exp/run_approx.py)). nDCG@10:
+EigenLI as defined in its paper (Archish S et al., arXiv:2609.07561): each document keeps the top-`k` eigenvectors of its token second-moment matrix and is scored by `sum_i |Pi_D q_i|^2` (re-implemented in [`exp/run_approx.py`](exp/run_approx.py)). One-page summary: [`report/eigenli_vs_certli.pdf`](report/eigenli_vs_certli.pdf).
 
-| Model / corpus | Exact MaxSim | EigenLI k=16 | EigenLI k=32 | k=32, corpus mean removed | k=24 + 8 farthest tokens |
+**Same memory (32 vectors per document), nDCG@10.** Bold: best of the three; change against EigenLI in brackets.
+
+| Model / corpus | EigenLI | Mean-shifted EigenLI (ours) | Low-rank + sparse EigenLI (ours) | Exact MaxSim |
+|---|---|---|---|---|
+| ColBERTv2 / SciFact | **67.7** | 66.6 (-1.1) | 67.0 (-0.7) | 69.3 |
+| ColBERTv2 / NFCorpus | 31.9 | 31.0 (-0.9) | **32.0 (+0.1)** | 34.4 |
+| AnswerAI-small / SciFact | 67.4 | **69.6 (+2.2)** | 68.9 (+1.5) | 74.5 |
+| AnswerAI-small / NFCorpus | 28.0 | **31.8 (+3.8)** | 27.5 (-0.5) | 37.0 |
+
+**Calibrated exact rescoring under the same guarantee** (Learn-then-Test: at most 5% of queries with a top-10 different from exact MaxSim, 90% confidence). Only the first stage differs: EigenLI k=32 (13.6% of the index) or the CertLI index with its bounds (34% to 37%). Bold: better of the pair.
+
+| Model / corpus | EigenLI first stage: nDCG@10 | rescored | CertLI (ours): nDCG@10 | rescored | Exact MaxSim |
 |---|---|---|---|---|---|
-| ColBERTv2 / SciFact | 69.3 | 63.6 | 67.7 | 66.6 (-1.1) | 67.0 (-0.7) |
-| ColBERTv2 / NFCorpus | 34.4 | 30.4 | 31.9 | 31.0 (-0.9) | 32.0 (+0.1) |
-| AnswerAI-small / SciFact | 74.5 | 68.0 | 67.4 | **69.6 (+2.2)** | **68.9 (+1.5)** |
-| AnswerAI-small / NFCorpus | 37.0 | 28.7 | 28.0 | **31.8 (+3.8)** | 27.5 (-0.5) |
+| ColBERTv2 / SciFact | 69.1 | 8.7% | **69.3** | **1.4% (6.2x fewer)** | 69.3 |
+| ColBERTv2 / NFCorpus | **34.1** | 73.1% | 34.0 | **7.1% (10.3x fewer)** | 34.4 |
+| AnswerAI-small / SciFact | 73.4 | 24.4% | **74.7** | **12.6% (1.9x fewer)** | 74.5 |
+| AnswerAI-small / NFCorpus | **36.6** | 78.1% | **36.6** | **71.0% (1.1x fewer)** | 37.0 |
 
-| Model / corpus | EigenLI k=32 | CertLI index, no rescoring (memory) | Calibrated CertLI (rescored) | EigenLI k=32 + calibrated rescoring (rescored) | Exact MaxSim |
-|---|---|---|---|---|---|
-| ColBERTv2 / SciFact | 67.7 | 69.6 (37%) | 69.3 (1.4%) | 69.1 (8.7%) | 69.3 |
-| ColBERTv2 / NFCorpus | 31.9 | 33.8 (35%) | 34.0 (7.1%) | 34.1 (73.1%) | 34.4 |
-| AnswerAI-small / SciFact | 67.4 | 70.7 (34%) | 74.7 (12.6%) | 73.4 (24.4%) | 74.5 |
-| AnswerAI-small / NFCorpus | 28.0 | 29.1 (34%) | 36.6 (71.0%) | 36.6 (78.1%) | 37.0 |
-
-* **Same memory.** Removing one corpus-wide mean from documents and queries (CertLI's Lemma 1 shift, not per-text centring) improves EigenLI on the anisotropic AnswerAI-small by 2.2 and 3.8 points and costs about 1 point on ColBERTv2. Spending 8 of 32 vectors on the tokens farthest from the subspace helps only on AnswerAI/SciFact. The 3/4 to 1/4 split was fixed in advance; other splits are in `results/eigen_sparse/`.
-* **With exact rescoring.** Calibrated CertLI (Learn-then-Test, at most 5% of queries with a top-10 different from exact MaxSim) comes within 0.4 points of exact MaxSim and rescores fewer documents than EigenLI used as the first stage of the same procedure.
-* Commands: `python exp/eigen_sparse.py <model>/<corpus> ...`, `python exp/eigen_rescore.py <model>/<corpus> ...` (the latter needs the bound matrices from `run_cert.py`), then `python exp/make_eigen_report.py`.
+* **Mean-shifted EigenLI** subtracts one corpus-wide mean from documents and queries (CertLI's Lemma 1 shift, not per-text centring). It helps the anisotropic AnswerAI-small (+2.2, +3.8) and does not help ColBERTv2.
+* **Low-rank + sparse EigenLI** keeps 24 eigenvectors plus the 8 tokens farthest from that subspace, scored as `sum_i max(|Pi q_i|^2, max_t <q_i, t>_+^2)`. The 24 + 8 split was fixed in advance; other splits are in `results/eigen_sparse/`.
+* Without rescoring, the CertLI index alone also beats EigenLI in all four settings (by 1.1 to 3.3 points), at about 2.5 times the memory.
+* Commands: `python exp/eigen_sparse.py <model>/<corpus> ...`, `python exp/eigen_rescore.py <model>/<corpus> ...` (needs the bound matrices from `run_cert.py`), then `python exp/make_eigen_report.py`.
 
 ---
 

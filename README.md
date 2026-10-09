@@ -2,7 +2,7 @@
 
 **Question.** Can a compressed multi-vector (ColBERT-style) index *prove* that it returns the exact MaxSim top-10, and how much of the corpus must it score at full precision to do so?
 
-This repository holds the complete implementation and every result behind the report **[`report/report.pdf`](report/report.pdf)** (*CertLI: First Experiments*, 4 pages). Every number in the report is read from a JSON file in [`results/`](results) by a single script ([`exp/make_report_assets.py`](exp/make_report_assets.py)), so each claim can be traced to a file and to the script that wrote it.
+This repository holds the complete implementation and every result behind the report **[`report/report.pdf`](report/report.pdf)** (*CertLI: First Experiments*, 4 pages). Every number in the report is read from a JSON file in [`results/`](results) by a single script ([`exp/make_report_assets.py`](exp/make_report_assets.py)), so each claim can be traced to a file and to the script that wrote it. A one-page follow-up, **[`report/eigenli_vs_certli.pdf`](report/eigenli_vs_certli.pdf)**, compares CertLI with EigenLI on nDCG@10 (see [EigenLI comparison](#eigenli-comparison)).
 
 ---
 
@@ -26,6 +26,28 @@ Share of the corpus scored at full precision per query. In brackets: realised sh
 3. **The reason is measurable.** The coding error is close to isotropic with respect to the query, so the realised error is a median 5% of its worst-case bound, while the top-10 is decided by tiny margins (median gap between the 10th and 11th exact scores 0.003 to 0.096, against a mean interval slack of 5 to 11).
 4. **Calibrated certificates work, with an honest caveat.** Shrinking the same intervals with a Learn-then-Test factor scores 1.4% to 12.6% of the corpus in three of four settings with the risk controlled. A fixed rerank depth calibrated the same way is equally cheap, so today the gain comes from calibration, not from per-query adaptivity; an oracle stopping rule shows 3 to 7 times headroom.
 5. **Anisotropy matters for spectral scores.** AnswerAI-small tokens share one dominant direction (random cross-document token cosine 0.82 to 0.84). Removing it is rank-safe for MaxSim (Lemma 1), but removing it from documents only collapses an EigenLI-style projection score from 68.0 to 1.6 nDCG@10; removing it from both sides is neutral to helpful.
+
+## EigenLI comparison
+
+EigenLI as defined in its paper (Archish S et al., arXiv:2609.07561): each document keeps the top-`k` eigenvectors of its token second-moment matrix and is scored by `sum_i |Pi_D q_i|^2` (re-implemented in [`exp/run_approx.py`](exp/run_approx.py)). nDCG@10:
+
+| Model / corpus | Exact MaxSim | EigenLI k=16 | EigenLI k=32 | k=32, corpus mean removed | k=24 + 8 farthest tokens |
+|---|---|---|---|---|---|
+| ColBERTv2 / SciFact | 69.3 | 63.6 | 67.7 | 66.6 (-1.1) | 67.0 (-0.7) |
+| ColBERTv2 / NFCorpus | 34.4 | 30.4 | 31.9 | 31.0 (-0.9) | 32.0 (+0.1) |
+| AnswerAI-small / SciFact | 74.5 | 68.0 | 67.4 | **69.6 (+2.2)** | **68.9 (+1.5)** |
+| AnswerAI-small / NFCorpus | 37.0 | 28.7 | 28.0 | **31.8 (+3.8)** | 27.5 (-0.5) |
+
+| Model / corpus | EigenLI k=32 | CertLI index, no rescoring (memory) | Calibrated CertLI (rescored) | EigenLI k=32 + calibrated rescoring (rescored) | Exact MaxSim |
+|---|---|---|---|---|---|
+| ColBERTv2 / SciFact | 67.7 | 69.6 (37%) | 69.3 (1.4%) | 69.1 (8.7%) | 69.3 |
+| ColBERTv2 / NFCorpus | 31.9 | 33.8 (35%) | 34.0 (7.1%) | 34.1 (73.1%) | 34.4 |
+| AnswerAI-small / SciFact | 67.4 | 70.7 (34%) | 74.7 (12.6%) | 73.4 (24.4%) | 74.5 |
+| AnswerAI-small / NFCorpus | 28.0 | 29.1 (34%) | 36.6 (71.0%) | 36.6 (78.1%) | 37.0 |
+
+* **Same memory.** Removing one corpus-wide mean from documents and queries (CertLI's Lemma 1 shift, not per-text centring) improves EigenLI on the anisotropic AnswerAI-small by 2.2 and 3.8 points and costs about 1 point on ColBERTv2. Spending 8 of 32 vectors on the tokens farthest from the subspace helps only on AnswerAI/SciFact. The 3/4 to 1/4 split was fixed in advance; other splits are in `results/eigen_sparse/`.
+* **With exact rescoring.** Calibrated CertLI (Learn-then-Test, at most 5% of queries with a top-10 different from exact MaxSim) comes within 0.4 points of exact MaxSim and rescores fewer documents than EigenLI used as the first stage of the same procedure.
+* Commands: `python exp/eigen_sparse.py <model>/<corpus> ...`, `python exp/eigen_rescore.py <model>/<corpus> ...` (the latter needs the bound matrices from `run_cert.py`), then `python exp/make_eigen_report.py`.
 
 ---
 
@@ -68,12 +90,15 @@ exp/
   run_eigen.py         E8  EigenLI-style projection score with and without the mean shift; Ward pooling
   run_approx.py            helpers for E8 (pooling, projection score, top-k overlap)
   make_report_assets.py    tables/*.tex, figs/*, results/final_numbers.json from results/
+  eigen_sparse.py          EigenLI vs corpus-mean removal vs low-rank + sparse EigenLI at equal memory
+  eigen_rescore.py         calibrated exact rescoring: CertLI vs EigenLI as first stage
+  make_eigen_report.py     tables/e1.tex, e2.tex, results/eigen_numbers.json
 scripts/
   download.sh    BEIR SciFact + NFCorpus and the two checkpoints into assets/
   run_all.sh     the full pipeline in the order used for the report
 results/         every result file used in the report (JSON)
 tables/ figs/    generated LaTeX table bodies and figures
-report/          report.tex, body.tex, report.pdf
+report/          report.tex, body.tex, report.pdf; eigenli_vs_certli.tex/.pdf (follow-up)
 ```
 
 ---
@@ -129,7 +154,7 @@ Models: `colbertv2` (colbert-ir/colbertv2.0, 128-d) and `answerai-small` (answer
 * **Byte accounting.** All stored floats count 2 bytes. LRS bytes per document = `2 * (d*k + n_clusters*(k + 4) + n_verbatim*d)`. The full index is `2 * d * n_tokens`. `tau` and `eps` are given in units of the RMS shifted-token norm.
 * **Weights.** All certification results use unweighted MaxSim (`w_i = 1`). IDF weights appear only in Table 1.
 * **Grids.** ColBERTv2/SciFact was the first setting run, with the full 3 x 3 (`tau`, `eps`) grid plus POOL at two radii; its file keeps the suite name `main`. The reduced grid now in `--suite main` was used for the other three settings. The ColBERTv2/SciFact bound matrix for the calibration analysis was regenerated with `--suite bonly`, which reproduced the original row exactly (36.7% of fp16, 94.8% scored).
-* **What was not completed.** The first PLAID-style runs (1, 2 and 4 bits) ran out of memory on the 7 GB machine for three of the four settings; the memory-safe implementation now in `codec.py` was only run in time for AnswerAI/NFCorpus at 1 bit (8% of fp16, 100% scored). `python exp/run_cert.py <model> <corpus> --suite rq2` runs the 2-bit code.
+* **PLAID-style codes.** The first 1, 2 and 4-bit runs ran out of memory on the 7 GB machine; the memory-safe implementation now in `codec.py` produced the 1-bit result in the report (AnswerAI/NFCorpus, 8% of fp16, 100% scored). The 2-bit runs (`--suite rq2`, 14% of fp16) finished after the report was written and are not in its tables: zero bound violations; the deterministic certificate scores 90% (ColBERTv2/SciFact), 73% (ColBERTv2/NFCorpus) and 100% (AnswerAI-small) of the corpus. Files: `results/cert/*__rq2.json`.
 * **Calibration statistics.** λ is selected on the calibration half of each split and evaluated on the other half; reported numbers are means over 200 splits. With about 160 test queries, the realised error of an individual split can exceed α by sampling noise (at most 14% of splits, ColBERTv2/NFCorpus) while the mean stays at or below 2.5%; the Learn-then-Test guarantee concerns the population risk.
 * **EigenLI.** `run_eigen.py` is my re-implementation of a projection-energy score `sum_i w_i |Pi_D q_i|^2` with `Pi_D` the top-`k` eigenspace of the document's token second-moment matrix. It is not the authors' code and may differ from the published method.
 * **Seeds.** All sampling, clustering and calibration splits use fixed seeds (0).

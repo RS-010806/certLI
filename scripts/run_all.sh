@@ -19,5 +19,8 @@ run python exp/analyze_stop.py                                 # E6: Table 5, Fi
 run python exp/analyze_oracle.py                               # E7: Table 5 (oracle)
 run python exp/analyze_realized.py                             # E5: Table 4 (document level), Figure 2
 run python exp/make_report_assets.py                           # tables/, figs/, results/final_numbers.json
-(cd report && pdflatex -interaction=nonstopmode report.tex >/dev/null && pdflatex -interaction=nonstopmode report.tex >/dev/null)
-echo "done: report/report.pdf"
+run python exp/eigen_sparse.py colbertv2/scifact colbertv2/nfcorpus answerai-small/scifact answerai-small/nfcorpus  # follow-up, Table 1
+run python exp/eigen_rescore.py                              # follow-up, Table 2 (uses results/bounds)
+run python exp/make_eigen_report.py                          # tables/e1.tex, e2.tex
+(cd report && for f in report eigenli_vs_certli; do pdflatex -interaction=nonstopmode $f.tex >/dev/null; pdflatex -interaction=nonstopmode $f.tex >/dev/null; done)
+echo "done: report/report.pdf, report/eigenli_vs_certli.pdf"

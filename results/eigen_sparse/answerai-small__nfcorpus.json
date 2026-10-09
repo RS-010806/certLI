@@ -1,0 +1,104 @@
+{
+ "model": "answerai-small",
+ "dataset": "nfcorpus",
+ "rows": [
+  {
+   "method": "exact MaxSim",
+   "budget": null,
+   "k": null,
+   "r": null,
+   "memory_frac": 1.0,
+   "ndcg10": 0.3697124529782683,
+   "recall100": 0.316224193335415,
+   "overlap10": 1.0
+  },
+  {
+   "method": "EigenLI",
+   "budget": 16,
+   "k": 16,
+   "r": 0,
+   "preregistered": false,
+   "memory_frac": 0.06794472127445446,
+   "ndcg10": 0.28660415209557744,
+   "recall100": 0.2712706042940453,
+   "overlap10": 0.3826625386996904
+  },
+  {
+   "method": "low-rank + sparse EigenLI",
+   "budget": 16,
+   "k": 14,
+   "r": 2,
+   "preregistered": false,
+   "memory_frac": 0.06794472127445446,
+   "ndcg10": 0.29722593151730475,
+   "recall100": 0.2732661693603652,
+   "overlap10": 0.4037151702786378
+  },
+  {
+   "method": "low-rank + sparse EigenLI",
+   "budget": 16,
+   "k": 12,
+   "r": 4,
+   "preregistered": true,
+   "memory_frac": 0.06794472127445446,
+   "ndcg10": 0.300723097658945,
+   "recall100": 0.27503690471941405,
+   "overlap10": 0.4077399380804954
+  },
+  {
+   "method": "low-rank + sparse EigenLI",
+   "budget": 16,
+   "k": 8,
+   "r": 8,
+   "preregistered": false,
+   "memory_frac": 0.06794472127445446,
+   "ndcg10": 0.2984571569385905,
+   "recall100": 0.2753198362697747,
+   "overlap10": 0.41578947368421054
+  },
+  {
+   "method": "EigenLI",
+   "budget": 32,
+   "k": 32,
+   "r": 0,
+   "preregistered": false,
+   "memory_frac": 0.13588944254890892,
+   "ndcg10": 0.27983730248850375,
+   "recall100": 0.2462718666644173,
+   "overlap10": 0.3619195046439628
+  },
+  {
+   "method": "low-rank + sparse EigenLI",
+   "budget": 32,
+   "k": 28,
+   "r": 4,
+   "preregistered": false,
+   "memory_frac": 0.13588944254890892,
+   "ndcg10": 0.28022434958278947,
+   "recall100": 0.2543546028956693,
+   "overlap10": 0.3572755417956657
+  },
+  {
+   "method": "low-rank + sparse EigenLI",
+   "budget": 32,
+   "k": 24,
+   "r": 8,
+   "preregistered": true,
+   "memory_frac": 0.13588944254890892,
+   "ndcg10": 0.2747104507066312,
+   "recall100": 0.2574998620094095,
+   "overlap10": 0.356656346749226
+  },
+  {
+   "method": "low-rank + sparse EigenLI",
+   "budget": 32,
+   "k": 16,
+   "r": 16,
+   "preregistered": false,
+   "memory_frac": 0.13588944254890892,
+   "ndcg10": 0.28253193058172527,
+   "recall100": 0.2694185037493579,
+   "overlap10": 0.38018575851393194
+  }
+ ]
+}

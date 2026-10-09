@@ -1,0 +1,104 @@
+{
+ "model": "colbertv2",
+ "dataset": "nfcorpus",
+ "rows": [
+  {
+   "method": "exact MaxSim",
+   "budget": null,
+   "k": null,
+   "r": null,
+   "memory_frac": 1.0,
+   "ndcg10": 0.34360655827308767,
+   "recall100": 0.28012600166374896,
+   "overlap10": 1.0
+  },
+  {
+   "method": "EigenLI",
+   "budget": 16,
+   "k": 16,
+   "r": 0,
+   "preregistered": false,
+   "memory_frac": 0.06794472127445446,
+   "ndcg10": 0.3036804094965166,
+   "recall100": 0.2543578868288317,
+   "overlap10": 0.5393188854489164
+  },
+  {
+   "method": "low-rank + sparse EigenLI",
+   "budget": 16,
+   "k": 14,
+   "r": 2,
+   "preregistered": false,
+   "memory_frac": 0.06794472127445446,
+   "ndcg10": 0.3035877241637769,
+   "recall100": 0.2518613190100839,
+   "overlap10": 0.5328173374613002
+  },
+  {
+   "method": "low-rank + sparse EigenLI",
+   "budget": 16,
+   "k": 12,
+   "r": 4,
+   "preregistered": true,
+   "memory_frac": 0.06794472127445446,
+   "ndcg10": 0.29354696260029794,
+   "recall100": 0.2505951607036919,
+   "overlap10": 0.5195046439628483
+  },
+  {
+   "method": "low-rank + sparse EigenLI",
+   "budget": 16,
+   "k": 8,
+   "r": 8,
+   "preregistered": false,
+   "memory_frac": 0.06794472127445446,
+   "ndcg10": 0.29399728952842175,
+   "recall100": 0.24164829198314583,
+   "overlap10": 0.4947368421052632
+  },
+  {
+   "method": "EigenLI",
+   "budget": 32,
+   "k": 32,
+   "r": 0,
+   "preregistered": false,
+   "memory_frac": 0.13588944254890892,
+   "ndcg10": 0.31884332442270674,
+   "recall100": 0.26390022068500124,
+   "overlap10": 0.5817337461300309
+  },
+  {
+   "method": "low-rank + sparse EigenLI",
+   "budget": 32,
+   "k": 28,
+   "r": 4,
+   "preregistered": false,
+   "memory_frac": 0.13588944254890892,
+   "ndcg10": 0.3199304620350099,
+   "recall100": 0.2592765005053829,
+   "overlap10": 0.5811145510835913
+  },
+  {
+   "method": "low-rank + sparse EigenLI",
+   "budget": 32,
+   "k": 24,
+   "r": 8,
+   "preregistered": true,
+   "memory_frac": 0.13588944254890892,
+   "ndcg10": 0.3195187408557334,
+   "recall100": 0.2585086464375654,
+   "overlap10": 0.5826625386996904
+  },
+  {
+   "method": "low-rank + sparse EigenLI",
+   "budget": 32,
+   "k": 16,
+   "r": 16,
+   "preregistered": false,
+   "memory_frac": 0.13588944254890892,
+   "ndcg10": 0.3127540757832133,
+   "recall100": 0.25793050853265703,
+   "overlap10": 0.5656346749226006
+  }
+ ]
+}

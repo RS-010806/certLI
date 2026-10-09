@@ -1,0 +1,59 @@
+{
+ "model": "colbertv2",
+ "dataset": "scifact",
+ "weights": "w1",
+ "k": 10,
+ "sigma": 0.875837939115171,
+ "sigma_raw": 1.000000073466621,
+ "n_docs": 5183,
+ "n_queries": 300,
+ "rows": [
+  {
+   "code": "RQ",
+   "params": {
+    "nbits": 2,
+    "n_centroids": 4096,
+    "shift": true,
+    "rel": {
+     "nbits": 2,
+     "shift": true
+    }
+   },
+   "bytes_ratio": 0.13671875,
+   "bytes_per_doc": 8247.844877484082,
+   "full_bytes_per_doc": 60327.09396102643,
+   "mean_k": 0.0,
+   "mean_clusters": 235.6527107852595,
+   "mean_verbatim": 0.0,
+   "mean_tokens": 235.6527107852595,
+   "violations_lo": 0,
+   "violations_hi": 0,
+   "pairs": 1554900,
+   "reads_mean": 4683.6,
+   "reads_median": 5113.5,
+   "frac_read_mean": 0.9036465367547752,
+   "frac_read_median": 0.986590777541964,
+   "frac_read_p90": 0.9998070615473664,
+   "frac_read_max": 1.0,
+   "frac_queries_read_le_5pct": 0.0,
+   "frac_queries_read_le_20pct": 0.016666666666666666,
+   "width_mean": 15.596179490409556,
+   "slack_up_mean": 9.836241712168597,
+   "err_hat_mean": 0.19166778091526288,
+   "s_k_mean": 14.701555263342698,
+   "gap_k_mean": 0.12310452779134115,
+   "approx_recall_at_k": 0.8713333333333334,
+   "approx_ndcg10": 0.6777995211797544,
+   "kind": "rq",
+   "rel": {
+    "nbits": 2,
+    "shift": true
+   },
+   "build_s": 141.58683848381042,
+   "bound_s": 169.6831042766571,
+   "sweep": true,
+   "rq_mean_err": 0.21757613122463226,
+   "rq_codebook_bytes": 1048576
+  }
+ ]
+}

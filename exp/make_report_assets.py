@@ -37,7 +37,7 @@ def W(name, rows):
 
 def cert_rows(m, d):
     rows = []
-    for suite in ("main", "bonly", "rq2"):
+    for suite in ("main", "bonly"):  # the 2-bit runs (suite rq2) finished after the report; see README
         r = J(f"{ROOT}/results/cert/{m}__{d}__w1__{suite}.json")
         if r:
             rows += r["rows"]

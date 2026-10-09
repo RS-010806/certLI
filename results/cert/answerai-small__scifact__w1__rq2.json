@@ -1,0 +1,59 @@
+{
+ "model": "answerai-small",
+ "dataset": "scifact",
+ "weights": "w1",
+ "k": 10,
+ "sigma": 0.42626140046526073,
+ "sigma_raw": 0.9999999525424835,
+ "n_docs": 5183,
+ "n_queries": 300,
+ "rows": [
+  {
+   "code": "RQ",
+   "params": {
+    "nbits": 2,
+    "n_centroids": 4096,
+    "shift": true,
+    "rel": {
+     "nbits": 2,
+     "shift": true
+    }
+   },
+   "bytes_ratio": 0.140625,
+   "bytes_per_doc": 6362.623191202007,
+   "full_bytes_per_doc": 45245.320470769824,
+   "mean_k": 0.0,
+   "mean_clusters": 235.6527107852595,
+   "mean_verbatim": 0.0,
+   "mean_tokens": 235.6527107852595,
+   "violations_lo": 0,
+   "violations_hi": 0,
+   "pairs": 1554900,
+   "reads_mean": 5183.0,
+   "reads_median": 5183.0,
+   "frac_read_mean": 1.0,
+   "frac_read_median": 1.0,
+   "frac_read_p90": 1.0,
+   "frac_read_max": 1.0,
+   "frac_queries_read_le_5pct": 0.0,
+   "frac_queries_read_le_20pct": 0.0,
+   "width_mean": 8.100528050954749,
+   "slack_up_mean": 6.500088290483747,
+   "err_hat_mean": 0.10800471386962793,
+   "s_k_mean": 3.8803883648180704,
+   "gap_k_mean": 0.014701531728108725,
+   "approx_recall_at_k": 0.7083333333333334,
+   "approx_ndcg10": 0.7067610727954975,
+   "kind": "rq",
+   "rel": {
+    "nbits": 2,
+    "shift": true
+   },
+   "build_s": 131.49281287193298,
+   "bound_s": 165.0806531906128,
+   "sweep": true,
+   "rq_mean_err": 0.10044393688440323,
+   "rq_codebook_bytes": 786432
+  }
+ ]
+}

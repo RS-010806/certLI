@@ -1,0 +1,83 @@
+\documentclass[10pt]{article}
+\usepackage[a4paper,top=1.5cm,bottom=1.5cm,left=1.8cm,right=1.8cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{mathptmx}
+\usepackage[scaled=0.92]{helvet}
+\usepackage{amsmath,amssymb}
+\usepackage{microtype}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{caption}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{float}
+\usepackage[hidelinks]{hyperref}
+\hypersetup{pdftitle={Weighted EigenLI}}
+
+\definecolor{ink}{HTML}{1B2A47}
+\definecolor{boxbg}{HTML}{F4F7FB}
+\definecolor{boxrule}{HTML}{2F5D8C}
+\captionsetup{font=small,labelfont=bf,skip=3pt}
+\setlist{itemsep=2pt,topsep=2pt,parsep=0pt,leftmargin=1.25em}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{4pt}
+\setlength{\tabcolsep}{4.2pt}
+\renewcommand{\arraystretch}{1.08}
+\titleformat*{\section}{\large\bfseries\color{ink}}
+\titleformat*{\subsection}{\normalsize\bfseries\color{ink}}
+\titlespacing*{\section}{0pt}{8pt}{2pt}
+\titlespacing*{\subsection}{0pt}{6pt}{1pt}
+\newcommand{\nrm}[1]{\lVert #1\rVert}
+\renewcommand{\cite}[1]{[#1]}
+\makeatletter\newcommand{\tabin}[1]{\@@input #1 }\makeatother
+\newcommand{\hd}[1]{\begin{tabular}[b]{@{}c@{}}#1\end{tabular}}
+
+\begin{document}
+\pagestyle{empty}
+
+\begin{center}
+{\LARGE\bfseries\color{ink} Weighted EigenLI}\\[3pt]
+{\large EigenLI with the zero-shot token weights of Weighted Chamfer}\\[6pt]
+{\small Complete code repository: \href{https://github.com/RS-010806/certLI}{github.com/RS-010806/certLI}}
+\end{center}
+
+\noindent\fcolorbox{boxrule}{boxbg}{\begin{minipage}{\dimexpr\textwidth-2\fboxsep-2\fboxrule\relax}
+\small
+\textbf{Result.} Weighting each query token by its zero-shot importance weight from Weighted Chamfer \cite{2} improves EigenLI \cite{1} on SciFact and NFCorpus for both models, with no extra memory and no extra query cost. At $k=32$ the gain is 0.6 to 7.1 nDCG@10 points and significant in all four settings ($p<0.05$). On ColBERTv2/SciFact, weighted EigenLI matches full MaxSim; on AnswerAI-small, where EigenLI trails MaxSim the most, it closes 28\% (SciFact) and 79\% (NFCorpus) of the gap.
+\end{minipage}}
+
+\section*{Method}
+EigenLI stores, for each document, the top-$k$ eigenvectors of its token second-moment matrix and scores $s(Q,D)=\sum_i\nrm{\Pi_D q_i}^2$. Weighted EigenLI changes only the query side:
+\[
+s_w(Q,D)=\sum_i w_i\,\nrm{\Pi_D q_i}^2,\qquad w_i=\log\!\Big(\frac{N-n_i+0.5}{n_i+0.5}+1\Big),
+\]
+where $n_i$ is the number of documents containing query token $i$ and $N$ the corpus size. As in \cite{2}, special tokens get weight 1 and tokens that never occur in the corpus get 0. The weights come from document frequencies alone, with no training, and the stored vectors and per-document cost are exactly those of EigenLI.
+
+\textbf{Why it helps.} A likely reason: in MaxSim, a frequent query token finds a near-perfect match in almost every document, so it adds roughly the same amount to every score. In EigenLI, its energy depends on how a document's few eigenvectors happen to align with it, which varies with the document's composition rather than its relevance. Frequent tokens therefore add noise to EigenLI's ranking, and down-weighting them leaves the score to the rare, informative tokens. This fits the AnswerAI-small result, whose tokens share one dominant direction: the weights help EigenLI there by up to 7.1 points, although they do not help full MaxSim on that model.
+
+\section*{Results}
+\begin{table}[H]
+\centering\small
+\caption{nDCG@10 of plain and weighted EigenLI at $k$ vectors per document (same memory and cost). In brackets: change against EigenLI. $^{*}p<0.05$, $^{**}p<0.01$, paired permutation test over queries. Last column: share of EigenLI's gap to full MaxSim closed by the weights at $k=32$.}
+\label{tab:w1}
+\begin{tabular}{llcccccc}
+\toprule
+& & & \multicolumn{2}{c}{$k=16$} & \multicolumn{2}{c}{$k=32$} & \\
+\cmidrule(lr){4-5}\cmidrule(lr){6-7}
+Model & Data & \hd{Full\\MaxSim} & EigenLI & \hd{Weighted\\EigenLI} & EigenLI & \hd{Weighted\\EigenLI} & \hd{Gap\\closed} \\
+\midrule
+\tabin{../tables/w1.tex}
+\bottomrule
+\end{tabular}
+\end{table}
+\textbf{Where it does not help.} On ArguAna (AnswerAI-small only, queries truncated to 32 tokens), a counter-argument task on which EigenLI already scores above full MaxSim (45.9 against 44.1), the weights change nDCG@10 by $-0.1$ at $k=16$ and $-2.1$ at $k=32$ ($p<0.01$).
+
+\textbf{Also tried.} Removing the corpus mean helps EigenLI on AnswerAI-small only, unsquared projections do not help, and adding the mean shift on top of the weights makes all four settings slightly worse. The weights alone are the most consistent change. Setup as in the earlier reports: ColBERTv2 and AnswerAI-ColBERT-small on BEIR SciFact (300 queries) and NFCorpus (323 queries), EigenLI re-implemented from \cite{1}.
+
+\section*{References}
+{\small
+[1] Archish S, S.\ Basu, A.\ Garg, R.\ Krishnaswamy, K.\ Shiragur. EigenLI: spectral approximations to late interaction. arXiv:2609.07561, 2026.\quad
+[2] Archish S, A.\ Garg, K.\ Shiragur, N.\ Kayal. Incorporating token importance in multi-vector retrieval. AAAI 2026.}
+
+\end{document}

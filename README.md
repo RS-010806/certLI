@@ -2,7 +2,7 @@
 
 **Question.** Can a compressed multi-vector (ColBERT-style) index *prove* that it returns the exact MaxSim top-10, and how much of the corpus must it score at full precision to do so?
 
-This repository holds the complete implementation and every result behind the report **[`report/report.pdf`](report/report.pdf)** (*CertLI: First Experiments*, 4 pages). Every number in the report is read from a JSON file in [`results/`](results) by a single script ([`exp/make_report_assets.py`](exp/make_report_assets.py)), so each claim can be traced to a file and to the script that wrote it. A one-page follow-up, **[`report/eigenli_vs_certli.pdf`](report/eigenli_vs_certli.pdf)**, compares CertLI with EigenLI on nDCG@10 (see [EigenLI comparison](#eigenli-comparison)).
+This repository holds the complete implementation and every result behind the report **[`report/report.pdf`](report/report.pdf)** (*CertLI: First Experiments*, 4 pages). Every number in the report is read from a JSON file in [`results/`](results) by a single script ([`exp/make_report_assets.py`](exp/make_report_assets.py)), so each claim can be traced to a file and to the script that wrote it. A one-page follow-up, **[`report/eigenli_vs_certli.pdf`](report/eigenli_vs_certli.pdf)**, compares CertLI with EigenLI on nDCG@10 (see [EigenLI comparison](#eigenli-comparison)), and [`report/weighted_eigenli.pdf`](report/weighted_eigenli.pdf) combines EigenLI with Weighted Chamfer token weights (see [Weighted EigenLI](#weighted-eigenli)).
 
 ---
 
@@ -54,6 +54,20 @@ EigenLI as defined in its paper (Archish S et al., arXiv:2609.07561): each docum
 * Without rescoring, the CertLI index alone also beats EigenLI in all four settings (by 1.1 to 3.3 points), at about 2.5 times the memory.
 * Commands: `python exp/eigen_sparse.py <model>/<corpus> ...`, `python exp/eigen_rescore.py <model>/<corpus> ...` (needs the bound matrices from `run_cert.py`), then `python exp/make_eigen_report.py`.
 
+## Weighted EigenLI
+
+EigenLI combined with the zero-shot token weights of Weighted Chamfer (Archish S, Garg, Shiragur, Kayal, AAAI 2026): `s_w(Q, D) = sum_i w_i |Pi_D q_i|^2`, where `w_i` is the BM25 IDF of query token `i` over the corpus (special tokens 1, tokens absent from the corpus 0). Same stored vectors and cost as EigenLI, no training. One-page note: [`report/weighted_eigenli.pdf`](report/weighted_eigenli.pdf).
+
+| Model / corpus | Full MaxSim | EigenLI k=16 | Weighted EigenLI k=16 | EigenLI k=32 | Weighted EigenLI k=32 | Gap to MaxSim closed (k=32) |
+|---|---|---|---|---|---|---|
+| ColBERTv2 / SciFact | 69.3 | 63.6 | **66.5 (+2.9)\*\*** | 67.7 | **69.5 (+1.8)\*** | above MaxSim |
+| ColBERTv2 / NFCorpus | 34.4 | 30.4 | **30.7 (+0.3)** | 31.9 | **32.5 (+0.6)\*\*** | 27% |
+| AnswerAI-small / SciFact | 74.5 | 68.0 | **69.0 (+1.0)** | 67.4 | **69.5 (+2.1)\*** | 28% |
+| AnswerAI-small / NFCorpus | 37.0 | 28.7 | **34.7 (+6.0)\*\*** | 28.0 | **35.1 (+7.1)\*\*** | 79% |
+| AnswerAI-small / ArguAna (queries truncated to 32 tokens) | 44.1 | 45.7 | 45.6 (-0.1) | 45.9 | 43.8 (-2.1)\*\* | n/a |
+
+nDCG@10. \* p < 0.05, \*\* p < 0.01 (paired sign-flip permutation test over queries, 20,000 permutations). The weights help on SciFact and NFCorpus for both models and do not help on ArguAna, where EigenLI already scores above full MaxSim. Also tested (`results/eigen_variants/`, `results/eigen_weighted/`): unsquared projections (`sum_i |Pi_D q_i|`) do not help, and adding the corpus-mean shift on top of the weights is slightly worse in all four settings. Commands: `python exp/eigen_weighted.py <model>/<corpus> ...`, `python exp/eigen_variants.py <model>/<corpus> ...`, then `python exp/make_weighted_report.py`.
+
 ---
 
 ## Method in brief
@@ -98,6 +112,9 @@ exp/
   eigen_sparse.py          EigenLI vs corpus-mean removal vs low-rank + sparse EigenLI at equal memory
   eigen_rescore.py         calibrated exact rescoring: CertLI vs EigenLI as first stage
   make_eigen_report.py     tables/e1.tex, e2.tex, results/eigen_numbers.json
+  eigen_weighted.py        EigenLI with Weighted Chamfer token weights (+/- corpus-mean shift)
+  eigen_variants.py        EigenLI scoring variants: squared vs unsquared, +/- corpus-mean shift
+  make_weighted_report.py  tables/w1.tex with paired permutation tests
 scripts/
   download.sh    BEIR SciFact + NFCorpus and the two checkpoints into assets/
   run_all.sh     the full pipeline in the order used for the report

@@ -56,6 +56,8 @@ where $n_i$ is the number of documents containing query token $i$ and $N$ the co
 
 \textbf{Why it helps.} A likely reason: in MaxSim, a frequent query token finds a near-perfect match in almost every document, so it adds roughly the same amount to every score. In EigenLI, its energy depends on how a document's few eigenvectors happen to align with it, which varies with the document's composition rather than its relevance. Frequent tokens therefore add noise to EigenLI's ranking, and down-weighting them leaves the score to the rare, informative tokens. This fits the AnswerAI-small result, whose tokens share one dominant direction: the weights help EigenLI there by up to 7.1 points, although they do not help full MaxSim on that model.
 
+\textbf{Link to CertLI.} CertLI's document codes keep rare tokens exactly, because they are the tokens a document's low-rank part captures worst (residual grows with IDF, Spearman 0.45 to 0.55). The weights apply the same idea on the query side, so in CertLI rare tokens can be handled specially on both sides: stored exactly in the document code and weighted up in the query.
+
 \section*{Results}
 \begin{table}[H]
 \centering\small
